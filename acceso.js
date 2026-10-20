@@ -24,7 +24,7 @@ window.secureAPI=async p=>{
   function receive(e){
    let allowed=false;try{const u=new URL(e.origin);allowed=u.protocol==='https:'&&(u.hostname==='script.google.com'||u.hostname==='script.googleusercontent.com'||u.hostname.endsWith('.script.googleusercontent.com')||u.hostname.endsWith('-script.googleusercontent.com'));}catch(_){}
    const d=e.data;if(!allowed||!d||!['SP_DIAGNOSTICO_API','SP_DIAGNOSTICO_RECEIPT'].includes(d.type)||d.requestId!==requestId)return;
-   cleanup();if(d.apiVersion!=='5.0'){reject(new Error('El servidor pertenece a una versión anterior. Actualiza Apps Script a la versión 5 y publica una nueva implementación.'));return;}if(d.ok)resolve(d);else reject(new Error(d.error||'No se ha podido completar la solicitud.'));
+   cleanup();if(d.apiVersion!=='5.0'){reject(new Error('El servidor no es compatible con esta web. Actualiza Apps Script con el paquete completo y publica una nueva implementación.'));return;}if(d.ok)resolve(d);else reject(new Error(d.error||'No se ha podido completar la solicitud.'));
   }
   window.addEventListener('message',receive);document.body.append(frame,form);
   timer=setTimeout(()=>{cleanup();reject(new Error('No se ha recibido confirmación. Comprueba la conexión y vuelve a intentarlo.'));},60000);form.submit();
@@ -69,10 +69,18 @@ function login(message=''){
  };
  emailChanged();if(message)err(message);
 }
+function passwordControl(id){return `<div class="password-control"><code id="teacher-key-${id}" class="password-value" aria-label="Contraseña oculta">••••••••</code><button class="btn light" type="button" data-toggle-password="${id}" aria-controls="teacher-key-${id}" aria-expanded="false">Mostrar contraseña</button></div>`;}
+function wirePasswords(container,passwords){
+ const buttons=container.querySelectorAll('[data-toggle-password]');
+ function mask(){buttons.forEach(btn=>{const node=container.querySelector('#teacher-key-'+btn.dataset.togglePassword);node.textContent='••••••••';node.setAttribute('aria-label','Contraseña oculta');btn.textContent='Mostrar contraseña';btn.setAttribute('aria-expanded','false');});}
+ buttons.forEach(btn=>btn.onclick=()=>{const show=btn.getAttribute('aria-expanded')!=='true',node=container.querySelector('#teacher-key-'+btn.dataset.togglePassword);node.textContent=show?passwords[btn.dataset.togglePassword]:'••••••••';node.setAttribute('aria-label',show?'Contraseña de la simulación '+btn.dataset.togglePassword:'Contraseña oculta');btn.textContent=show?'Ocultar contraseña':'Mostrar contraseña';btn.setAttribute('aria-expanded',String(show));});
+ return mask;
+}
 async function teacherDashboard(){
  const d=await window.secureAPI({action:'dashboard',token:auth.token});sessionBar(d.user);
- root.innerHTML=`<main class="dashboard"><div class="dashboard-heading"><section><p class="eyebrow">Área del profesorado</p><h1>Panel de simulaciones</h1><p class="muted">Consulta las contraseñas y prepara la sesión con tu grupo.</p></section><span class="pill">2.º ESO · Matemáticas</span></div><div class="home-cards">${['1','2'].map(id=>`<section class="home-card"><h2>Simulación ${id}</h2><p>16 preguntas · 45 minutos</p><p class="small">Contraseña de acceso para el alumnado</p><code class="password-value">${esc(d.passwords[id])}</code><div class="button-row"><button class="btn light" data-copy="${id}">Copiar contraseña</button><a class="btn" href="${href('prueba')}${cfg.preview?'&':'?'}correccion=${id}">Ver corrección</a></div></section>`).join('')}</div><section class="dashboard-demo"><div><h2>Prueba para la pizarra</h2><p>8 preguntas de demostración y corrección de los tres modelos.</p></div><a href="${href('prueba')}" class="btn">Abrir Prueba →</a></section><p class="dashboard-note">Las claves distinguen mayúsculas y minúsculas. Cada una permite entrar únicamente en su simulación.</p><p id="copy-status" role="status" class="small"></p></main>`;
- root.querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(d.passwords[btn.dataset.copy]);$('#copy-status').textContent='Contraseña copiada.';}catch(_){$('#copy-status').textContent='Selecciona la contraseña y cópiala con Ctrl+C.';}});
+ root.innerHTML=`<main class="dashboard"><div class="dashboard-heading"><section><p class="eyebrow">Área del profesorado</p><h1>Panel de simulaciones</h1><p class="muted">Consulta las contraseñas y prepara la sesión con tu grupo.</p></section><span class="pill">2.º ESO · Matemáticas</span></div><div class="home-cards">${['1','2'].map(id=>`<section class="home-card"><h2>Simulación ${id}</h2><p>16 preguntas · 45 minutos</p><p class="small">Contraseña de acceso para el alumnado</p>${passwordControl(id)}<div class="button-row"><button class="btn light" data-copy="${id}">Copiar contraseña</button><a class="btn" href="${href('prueba')}${cfg.preview?'&':'?'}correccion=${id}">Ver corrección</a></div></section>`).join('')}</div><section class="dashboard-demo"><div><h2>Prueba para la pizarra</h2><p>8 preguntas de demostración y corrección de los tres modelos.</p></div><a href="${href('prueba')}" class="btn">Abrir Prueba →</a></section><p class="dashboard-note">Las claves distinguen mayúsculas y minúsculas. Cada una permite entrar únicamente en su simulación.</p><p id="copy-status" role="status" class="small"></p></main>`;
+ wirePasswords(root,d.passwords);
+ root.querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(d.passwords[btn.dataset.copy]);$('#copy-status').textContent='Contraseña copiada.';}catch(_){$('#copy-status').textContent='Pulsa Mostrar contraseña y después selecciónala y cópiala con Ctrl+C.';}});
 }
 async function enter(){
  if(auth.user.role==='teacher'&&['1','2'].includes(page)){location.href=href('prueba')+(cfg.preview?'&':'?')+'correccion='+page;return;}
@@ -82,7 +90,7 @@ async function enter(){
  const d=await window.secureAPI({action:'content',exam:page,token:auth.token});
  auth.user=d.user;window.AUTH=auth;window.EXAMS=d.exams;window.GROUPS=d.groups;window.SOLUTIONS=d.solutions||{};sessionBar(d.user);
  if(d.user.role==='teacher'){
-  const r=await window.secureAPI({action:'dashboard',token:auth.token}),box=document.createElement('details');box.className='teacher-passwords';box.innerHTML=`<summary>Consultar contraseñas de las simulaciones</summary><div class="inline-keys"><span>Simulación 1: <code>${esc(r.passwords['1'])}</code></span><span>Simulación 2: <code>${esc(r.passwords['2'])}</code></span></div>`;root.before(box);
+  const r=await window.secureAPI({action:'dashboard',token:auth.token}),box=document.createElement('details');box.className='teacher-passwords';box.innerHTML=`<summary>Consultar contraseñas de las simulaciones</summary><div class="inline-keys">${['1','2'].map(id=>`<section><h3>Simulación ${id}</h3>${passwordControl(id)}</section>`).join('')}</div>`;root.before(box);const mask=wirePasswords(box,r.passwords);box.addEventListener('toggle',()=>{if(!box.open)mask();});
   const target=new URLSearchParams(location.search).get('correccion');if(['1','2','prueba'].includes(target))window.correctionTarget=target;
  }
  if(!engineLoaded){if(!window.startExam)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='app.js?v=5.0';s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar la prueba. Recarga la página.'));document.head.append(s);});engineLoaded=true;window.startExam();}
