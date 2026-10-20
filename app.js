@@ -1,5 +1,26 @@
 window.startExam = () => {
 'use strict';
+// Retirar las pistas indicadas.
+const pistasRetiradas = {
+  '1': ['r2q4', 'r2q5', 'r3q5', 'r4q6', 'r5q3'],
+  '2': ['r6q8', 'r7q5', 'r7q8']
+};
+
+Object.entries(pistasRetiradas).forEach(([modelo, ids]) => {
+  const preguntas = window.EXAMS?.[modelo]?.questions || [];
+
+  preguntas.forEach(pregunta => {
+    if (ids.includes(pregunta.id)) pregunta.extra = '';
+
+    // Simulación 1, pregunta 2.
+    if (modelo === '1' && pregunta.id === 'r2q4') {
+      pregunta.text = pregunta.text.replace(/×/g, '·');
+      pregunta.options = pregunta.options.map(
+        opcion => opcion.replace(/×/g, '·')
+      );
+    }
+  });
+});
 const cfg=window.APP_CONFIG||{}, page=document.body.dataset.exam, teacher=page==='prueba', root=document.getElementById('app');
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
