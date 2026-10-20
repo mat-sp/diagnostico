@@ -88,12 +88,13 @@ async function enter(){
  root.innerHTML='<main class="auth-loading" role="status">Comprobando permiso y cargando el contenido…</main>';
  if(auth.user.role==='teacher'&&page==='inicio'){await teacherDashboard();return;}
  const d=await window.secureAPI({action:'content',exam:page,token:auth.token});
- auth.user=d.user;window.AUTH=auth;window.EXAMS=d.exams;window.GROUPS=d.groups;window.SOLUTIONS=d.solutions||{};sessionBar(d.user);
+ if(Object.values(d.exams).some(e=>e.version!=='2026-10-modelos'))throw new Error('Falta actualizar las simulaciones en Apps Script. Sustituye el servidor y actualiza la implementación antes de comenzar.');
+auth.user=d.user;window.AUTH=auth;window.EXAMS=d.exams;window.GROUPS=d.groups;window.SOLUTIONS=d.solutions||{};sessionBar(d.user);
  if(d.user.role==='teacher'){
   const r=await window.secureAPI({action:'dashboard',token:auth.token}),box=document.createElement('details');box.className='teacher-passwords';box.innerHTML=`<summary>Consultar contraseñas de las simulaciones</summary><div class="inline-keys">${['1','2'].map(id=>`<section><h3>Simulación ${id}</h3>${passwordControl(id)}</section>`).join('')}</div>`;root.before(box);const mask=wirePasswords(box,r.passwords);box.addEventListener('toggle',()=>{if(!box.open)mask();});
   const target=new URLSearchParams(location.search).get('correccion');if(['1','2','prueba'].includes(target))window.correctionTarget=target;
  }
- if(!engineLoaded){if(!window.startExam)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='app.js?v=5.0';s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar la prueba. Recarga la página.'));document.head.append(s);});engineLoaded=true;window.startExam();}
+ if(!engineLoaded){if(!window.startExam)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='app.js?r=20261020-modelos';s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar la prueba. Recarga la página.'));document.head.append(s);});engineLoaded=true;window.startExam();}
 }
 async function boot(){
  try{auth=JSON.parse(sessionStorage.getItem(storageKey)||'null');}catch(_){}
