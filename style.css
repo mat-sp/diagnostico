@@ -13,3 +13,15 @@ body{font-family:Arial,"Helvetica Neue",sans-serif;font-size:15px;line-height:1.
 .password-control{margin:18px 0 22px}.password-control .password-value{margin:0 0 12px}.password-control .btn{min-width:180px}.inline-keys>section{min-width:220px;flex:1}.inline-keys h3{font-size:16px;margin:0 0 10px}.teacher-passwords .password-value{font-size:24px;display:block}.teacher-passwords .password-control{margin:0 0 10px}.credits-link{color:#fff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}.credits-link:hover{color:#d9edff}.credits-link:focus-visible{outline:2px solid white;outline-offset:4px}.credits-page{max-width:960px}.credits-page .start-card{margin-bottom:24px}.credits-page ul{padding-left:22px}.credits-page li{margin:8px 0}.credits-page a{overflow-wrap:anywhere}.footer{display:block;text-align:center;line-height:1.65}.release-label{display:none}@media(max-width:650px){.sectionbar{flex-wrap:wrap;gap:8px}.credits-link{font-size:12px}.password-control .btn{min-width:0;width:100%}.inline-keys>section{min-width:0;width:100%}}
 
 .footer-credits{display:inline-block;margin-left:1rem;color:#174e78;font-weight:600;text-decoration:underline}.footer{line-height:1.8}
+
+/* Fuente y créditos: únicamente en el pie. */
+.sectionbar a[href="fuentes.html"] {
+  display: none;
+}
+
+/* En una línea debajo del texto de autoría. */
+.footer .footer-credits {
+  display: block;
+  width: fit-content;
+  margin: 4px auto 0;
+}
